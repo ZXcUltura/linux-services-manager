@@ -1,6 +1,33 @@
 #!/bin/bash
 
-SERVICES=("NetworkManager" "pipewire" "pipewire-pulse" "wireplumber" "bluetooth" "sshd" "systemd-journald")
+CONFIG_FILE="$(dirname "$0")/services.txt"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    cat << 'EOF' > "$CONFIG_FILE"
+NetworkManager
+pipewire
+pipewire-pulse
+wireplumber
+bluetooth
+sshd
+systemd-journald
+EOF
+fi
+
+load_services() {
+    SERVICES=()
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+        SERVICES+=($(echo "$line" | xargs))
+    done < "$CONFIG_FILE"
+}
+
+load_services
+
+if [ ${#SERVICES[@]} -eq 0 ]; then
+    echo -e "\e[31mОшибка: Файл $CONFIG_FILE пуст!\e[0m"
+    exit 1
+fi
 
 while true; do
     clear
@@ -29,14 +56,21 @@ while true; do
     done
 
     echo "--------------------------------------------------"
+    echo "e) Редактировать список (в nano)"
     echo "q) Выход"
     echo "=================================================="
     
-    read -p "Выберите номер службы или 'q': " CHOICE
+    read -p "Выберите номер службы или действие: " CHOICE
 
     if [[ "$CHOICE" == "q" ]]; then
         clear
         break
+    fi
+
+    if [[ "$CHOICE" == "e" ]]; then
+        nano "$CONFIG_FILE"
+        load_services
+        continue
     fi
 
     if ! [[ "$CHOICE" =~ ^[0-9]+$ ]] || [ "$CHOICE" -le 0 ] || [ "$CHOICE" -gt "${#SERVICES[@]}" ]; then
@@ -67,17 +101,14 @@ while true; do
 
         case $ACTION in
             1)
-                echo "Запуск $SEL_SERVICE..."
                 $CMD start "$SEL_SERVICE"
                 break
                 ;;
             2)
-                echo "Перезапуск $SEL_SERVICE..."
                 $CMD restart "$SEL_SERVICE"
                 break
                 ;;
             3)
-                echo "Остановка $SEL_SERVICE..."
                 $CMD stop "$SEL_SERVICE"
                 break
                 ;;
