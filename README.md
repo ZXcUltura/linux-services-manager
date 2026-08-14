@@ -1,4 +1,4 @@
-markdown# Linux Services Manager 🛠️
+ Linux Services Manager 🛠️
 
 Интерактивный Bash-скрипт для удобного мониторинга и управления системными и пользовательскими службами через `systemctl` в Linux (отлично работает на Arch Linux).
 
